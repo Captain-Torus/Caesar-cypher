@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caesar Cipher Tool</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; padding: 50px; background: #f4f4f9; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        textarea { width: 100%; height: 100px; margin: 10px 0; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        input[type="number"] { width: 60px; padding: 5px; }
+        .output { background: #e9ecef; padding: 15px; border-radius: 4px; min-height: 50px; word-wrap: break-word; font-weight: bold; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🔐 Caesar Cipher</h2>
+    <label>Message:</label>
+    <textarea id="message" placeholder="Type your secret message here..."></textarea>
+    
+    <label>Shift Amount (1-25):</label>
+    <input type="number" id="shift" value="3" min="1" max="25">
+    
+    <p><strong>Result:</strong></p>
+    <div id="result" class="output">Your result will appear here...</div>
+</div>
+
+<script>
+    const msgInput = document.getElementById('message');
+    const shiftInput = document.getElementById('shift');
+    const resultDiv = document.getElementById('result');
+
+    const caesarCipher = (str, shift) => {
+        return str.replace(/[a-z]/gi, (char) => {
+            const start = char <= 'Z' ? 65 : 97;
+            return String.fromCharCode(((char.charCodeAt(0) - start + shift) % 26 + 26) % 26 + start);
+        });
+    };
+
+    const update = () => {
+        const shift = parseInt(shiftInput.value) || 0;
+        resultDiv.innerText = caesarCipher(msgInput.value, shift);
+    };
+
+    msgInput.addEventListener('input', update);
+    shiftInput.addEventListener('input', update);
+</script>
+
+</body>
+</html>
