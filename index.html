@@ -3,38 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roman Caesar Cipher</title>
+    <title>Caesar's Royal Cipher</title>
     <style>
         body { 
             background-color: #2c241e;
             background-image: url('https://www.transparenttextures.com/patterns/dark-leather.png');
-            display: flex; justify-content: center; padding: 50px; font-family: 'Times New Roman', serif;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;
+            font-family: 'Times New Roman', serif;
         }
         .scroll { 
-            background: #f4e4bc; /* Parchment color */
-            padding: 40px; border-radius: 5px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 50px rgba(139, 69, 19, 0.2);
-            width: 100%; max-width: 500px; border: 15px solid #8b4513;
-            border-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png') 30 round;
+            background: #f4e4bc; padding: 30px; border-radius: 5px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.7); width: 90%; max-width: 450px;
+            border: 12px solid #8b4513; position: relative;
         }
-        h1 { text-align: center; color: #5d0000; text-transform: uppercase; letter-spacing: 4px; border-bottom: 2px solid #5d0000; }
-        label { font-weight: bold; color: #5d0000; display: block; margin-top: 15px; }
+        h1 { text-align: center; color: #5d0000; text-transform: uppercase; letter-spacing: 3px; margin-top: 0; }
         
-        textarea, select, input { 
-            width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #8b4513; 
-            background: rgba(255,255,255,0.5); font-family: 'Times New Roman', serif; font-size: 1.1rem;
+        /* THE ROMAN WHEEL */
+        .wheel-container { display: flex; flex-direction: column; align-items: center; margin: 20px 0; }
+        .dial-wrapper { position: relative; width: 180px; height: 180px; }
+        
+        #wheel {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: radial-gradient(circle, #d4d4d4, #a0a0a0);
+            border: 6px solid #5d0000; box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            transition: transform 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
         }
         
-        .mode-container { display: flex; gap: 10px; margin-bottom: 10px; }
+        .indicator {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 10px solid transparent;
+            border-right: 10px solid transparent; border-top: 20px solid #5d0000; z-index: 10;
+        }
+
+        .center-mark { font-size: 2rem; font-weight: bold; color: #5d0000; pointer-events: none; }
+        
+        /* Controls */
+        .mode-container { display: flex; gap: 5px; margin-bottom: 15px; }
         .mode-btn { 
-            flex: 1; padding: 10px; cursor: pointer; border: 2px solid #5d0000; 
-            background: none; color: #5d0000; font-weight: bold; transition: 0.3s;
+            flex: 1; padding: 8px; cursor: pointer; border: 2px solid #5d0000; 
+            background: none; color: #5d0000; font-weight: bold;
         }
         .mode-btn.active { background: #5d0000; color: #f4e4bc; }
 
+        textarea { 
+            width: 100%; height: 80px; padding: 10px; border: 1px solid #8b4513; 
+            background: rgba(255,255,255,0.4); box-sizing: border-box; font-size: 1.1rem;
+        }
         .output-box { 
-            background: rgba(0,0,0,0.05); padding: 20px; border: 1px dashed #8b4513; 
-            min-height: 60px; font-style: italic; font-size: 1.3rem; color: #2c241e;
+            background: rgba(0,0,0,0.07); padding: 15px; border: 1px dashed #8b4513; 
+            min-height: 50px; font-style: italic; color: #2c241e; margin-top: 10px;
         }
     </style>
 </head>
@@ -48,21 +66,25 @@
         <button id="decBtn" class="mode-btn" onclick="setMode('decode')">DECODE</button>
     </div>
 
-    <label>Secret Message:</label>
-    <textarea id="message" placeholder="Enter Latin or English text..."></textarea>
+    <textarea id="message" placeholder="Enter your message..."></textarea>
     
-    <label>Key (Shift):</label>
-    <input type="number" id="shift" value="3" min="1" max="25">
+    <div class="wheel-container">
+        <label style="color:#5d0000; font-weight:bold; margin-bottom: 10px;">ROTATE THE DIAL</label>
+        <div class="dial-wrapper">
+            <div class="indicator"></div>
+            <div id="wheel" onclick="rotateWheel()">
+                <div class="center-mark" id="romanVal">III</div>
+            </div>
+        </div>
+    </div>
     
-    <label>Result:</label>
-    <div id="result" class="output-box">...</div>
+    <div id="result" class="output-box">Your secret awaits...</div>
 </div>
 
 <script>
     let mode = 'encode';
-    const msgInput = document.getElementById('message');
-    const shiftInput = document.getElementById('shift');
-    const resultDiv = document.getElementById('result');
+    let currentShift = 3;
+    const romanNumerals = ["N", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX", "XXI", "XXII", "XXIII", "XXIV", "XXV"];
 
     function setMode(newMode) {
         mode = newMode;
@@ -71,21 +93,30 @@
         update();
     }
 
+    function rotateWheel() {
+        currentShift = (currentShift + 1) % 26;
+        const rotation = currentShift * (360 / 26);
+        document.getElementById('wheel').style.transform = `rotate(-${rotation}deg)`;
+        document.getElementById('romanVal').innerText = romanNumerals[currentShift];
+        update();
+    }
+
     const caesarCipher = (str, shift) => {
-        if (mode === 'decode') shift = (26 - (shift % 26));
+        if (mode === 'decode') shift = (26 - (shift % 26)) % 26;
         return str.replace(/[a-z]/gi, (char) => {
             const start = char <= 'Z' ? 65 : 97;
             return String.fromCharCode(((char.charCodeAt(0) - start + shift) % 26 + 26) % 26 + start);
         });
     };
 
-    const update = () => {
-        const shift = parseInt(shiftInput.value) || 0;
-        resultDiv.innerText = caesarCipher(msgInput.value, shift) || "...";
-    };
+    function update() {
+        const text = document.getElementById('message').value;
+        document.getElementById('result').innerText = caesarCipher(text, currentShift) || "Your secret awaits...";
+    }
 
-    msgInput.addEventListener('input', update);
-    shiftInput.addEventListener('input', update);
+    document.getElementById('message').addEventListener('input', update);
+    // Initial rotation
+    document.getElementById('wheel').style.transform = `rotate(-${3 * (360/26)}deg)`;
 </script>
 
 </body>
